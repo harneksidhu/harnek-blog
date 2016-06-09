@@ -2,14 +2,19 @@
 	<i class="icon-reorder icon-large"></i>
 </div>
 <header id="header">
-	<h1 class="blog-title">
-		<a href="<%- config.root %>"><%= config.title %></a>
-	</h1>
+	<div class="header-left-section">
+		<h1 class="blog-title">
+			<a href="<%- config.root %>"><%= config.title %></a>
+		</h1>
+		<div class="social-links">
+			<% if (theme.github){ %><a href="<%- theme.github %>" id="nav-github-link" class="nav-icon" title="Github Profile"></a><% } %>
+			<% if (theme.linkedin){ %><a href="<%- theme.linkedin %>" id="nav-linkedin-link" class="nav-icon" title="LinkedIn Profile"></a><% } %>
+		</div>
+	</div>
 	<nav class="nav">
 		<ul>
 			<% for (var i in theme.menu){ %><li><a href="<%- theme.menu[i] %>"><%= i %></a></li><% } %>
 			<li><a id="nav-search-btn" class="nav-icon" title="Search"></a></li>
-			<% if (theme.rss){ %><li><a href="<%- theme.rss %>" id="nav-rss-link" class="nav-icon" title="RSS Feed"></a></li><% } %>
 		</ul>
 	</nav>
 	<div id="search-form-wrap">

@@ -11,6 +11,9 @@
     clear: both
     content: "."
 
+.header-left-section
+  display: inline-block
+
 .blog-title
   float: left
   display: inline-block
@@ -84,6 +87,14 @@
   &:before
     content: "\f09e"
 
+#nav-github-link
+  &:before
+    content: "\f113"
+
+#nav-linkedin-link
+  &:before
+    content: "\f08c"
+
 #nav-search-btn
   &:before
     content: "\f002"
@@ -139,3 +150,11 @@
   cursor: pointer
   &:hover, &:focus
     color: #777
+
+.social-links
+  text-align: center
+  a
+    font-weight: bold
+    color: color-default
+    &:hover
+      color: color-link
