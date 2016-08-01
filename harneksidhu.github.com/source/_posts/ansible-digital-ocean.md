@@ -67,20 +67,160 @@ on your favourite terminal client to spin up the virtual machine. This should ta
 
 ## Run the demo
 
+The sample project is a simple ansible script that performs the following actions (summarized):
+
+1. Instructs DigitalOcean to create a droplet
+2. Installs Nginx HTTP server
+3. Configures Nginx to serve a static web page
+
+To see this in action, run the following commands:
+
+
+``` sh
+vagrant ssh
+cd ansible-digital-ocean/
+ansible-playbook setup.yml
+```
+
+All we did was we connected to the local virtual machine which has ansible installed using ssh. We then changed the directory on the machine to where our ansible script (setup.yml) is stored. We finally used the `ansible-playbook setup.yml` command to fire the script. 
+
+You should see a similar output below if all goes well:
+
+
+{% asset_img playbook-output.png %}
+
+
+If you head on over to your DigitalOcean dashboard, you should see a droplet that has been automatically created for you:
+
+{% asset_img digital-ocean-dashboard.png %}
+
+
+Since the server is running, you should be able to hit the ip-address on your browser to see Nginx serving a basic HTML page.
 
 
 
+## Explanation
+
+Let's browse through `setup.yml` and explain what is happening step by step. `setup.yml` is defined as a playbook. A playbook is composed of one or more `plays`. The goal of a `play` is to execute a set of tasks to a group of hosts. `setup.yml` is composed of three plays. The first play communicates with DigitalOcean to create a droplet. The second play connects to the droplet to install `python2` which is required for Ansible to operate correctly. The third play installs and configures Nginx.
 
 
+The following snippet contains the first play:
+
+``` yml
+---
+- hosts: localhost
+  tasks:
+  - name: Store public ssh key
+    shell: cat keys/id_rsa.pub
+    register: public_key
+  - name: Store public ssh key in digital ocean
+    digital_ocean:
+      state: present
+      command: ssh
+      name: ansible_ssh_key
+      ssh_pub_key: "{{ public_key.stdout }}"
+      api_token: "{{ digital_ocean_api_token }}"
+      unique_name: yes
+    register: my_key
+  - name: Create droplet
+    digital_ocean:
+        state: present
+        command: droplet
+        name: host0
+        api_token: "{{ digital_ocean_api_token }}"
+        size_id: 512mb
+        region_id: tor1
+        image_id: ubuntu-16-04-x64
+        unique_name: yes
+        ssh_key_ids: "{{ my_key.ssh_key.id }}"
+    register: host0
+  - add_host: 
+      name: "{{ host0.droplet.ip_address }}"
+      groups: host0
+      ansible_ssh_private_key_file: keys/id_rsa
+  - pause: seconds=20
+```
+
+There is unfortunately a lot going on here so I will try to summarize it in point form:
+
+- The `- hosts: localhost` line tells Ansible we want to run the tasks of this play on localhost since we are only communicating with DigitalOcean's api at this point.
+
+- In the first task `shell: cat keys/id_rsa.pub` we are utilizing the [shell module](http://docs.ansible.com/ansible/shell_module.html) to run a cat command on localhost machine. We are redirecting the output of the cat command onto a temporary [registered variable](http://docs.ansible.com/ansible/playbooks_variables.html#registered-variables) called `public_key` In summary, we are storing the public ssh key onto a temporary variable that can be used in the next step.
+
+- In the `- name: Store public ssh key in digital ocean` and `- name: Create droplet` tasks, we are utilizing the [digital_ocean](http://docs.ansible.com/ansible/digital_ocean_module.html) module to communicate with DigitalOcean's api. The first task instructs DigitalOcean to store our public ssh key. The second task tells it to create a droplet. We catch the `api_token` using the [curly brackets](http://docs.ansible.com/ansible/playbooks_variables.html#hey-wait-a-yaml-gotcha) syntax.
+
+- The final task utilizes [add_host](http://docs.ansible.com/ansible/add_host_module.html) module to store the IP address of the droplet as well as the corresponding private key necessary in order to ssh into it. We are storing the machine onto a hostname variable called `host0`.
 
 
+In the next play, we are going to connect to `host0` and install python2 since it is a [requirement](http://docs.ansible.com/ansible/intro_installation.html#managed-node-requirements) in order to execute commands on a remote machine.
 
 
+``` yml
+- hosts: host0
+  remote_user: root
+  gather_facts: no
+  tasks:
+  - name: Install python2
+    raw: apt-get -y install python-minimal
+```
+In summary we are:
 
-3. Open a terminal and change the directory to where this repository is located.
-4. Run `vagrant up` and wait till the machine has been provisioned.
-5. Run `vagrant ssh` to acces the virtual machine. You will be logging in as user `vagrant` and the password is `vagrant`.
-6. Once inside the machine, run `ansible-playbook setup.yml` to run the demo and `ansible-playbook destroy.yml` to destroy it.
+- Using `host0` instead of `localhost` since our goal is to run tasks on the remote machine. Since we have already registered host0 with the appropriate IP address and ssh key, Ansible should be able to handle the connection automatically.  
 
+- Connecting to the machine using `root` since that is the only available user
 
+- Utilizing [raw](http://docs.ansible.com/ansible/raw_module.html) module to execute the installation of python2. Raw module is necessary because all other core modules won't work until python2 is installed.
+
+Our last play is simple as we are going to setup/configure our HTTP server.
+
+``` yml
+- hosts: host0
+  remote_user: root
+  tasks:
+- name: Install nginx
+  apt: 
+    name: nginx
+    state: present
+- name: Update nginx.conf
+  copy:
+    src: files/nginx.conf
+    dest: /etc/nginx/nginx.conf
+- name: Create /home/static directory
+  file:
+    path: /home/static
+    state: directory
+- name: Copy index.html
+  copy:
+    src: files/index.html
+    dest: /home/static/index.html
+- name: Restart nginx service
+  service:
+    name: nginx
+    state: restarted
+```
+
+In summary we are:
+
+- Connecting to the host machine again using `host0`
+
+- Intalling Nginx using the [apt](http://docs.ansible.com/ansible/apt_module.html) module
+
+- Copying the `nginx.conf` configuration file using the [copy](http://docs.ansible.com/ansible/copy_module.html)
+
+- Creating the `/home/static` filepath and copying our index.html file onto the remote server
+
+- Restarting the nginx webserver using the [service](http://docs.ansible.com/ansible/service_module.html) module
+
+## Closing Thoughts
+
+The most important realization that I want you to take out of this blog post is to have the mindset of automating everything. Whether it may be interfacing with a cloud provider to spin up/down virtual machines or installing/configuring applications -you will save a lot of time in the long run if you put that effort up front to focus on automation.
+
+Getting used to managing servers with Ansible takes a little bit of effort as there is definitely a learning curve involved with the software. There are a ton of [core modules](http://docs.ansible.com/ansible/modules_by_category.html) available and [many extra modules](https://github.com/ansible/ansible-modules-extras) that are in active development. The possibilities are endless with what you can accomplish with it.
+
+## Further Reading
+
+If you are interested in learning Ansible at a more in-depth level, here are a list of resources I found to be helpful:
+
+- https://www.ansible.com/webinars-training
+- http://docs.ansible.com/ansible/index.html
 
