@@ -13,7 +13,7 @@ There are a series of steps required before you can deploy an application to the
 3. Copy over your application build onto the server so that it can be deployed.
 
 
-This process seems to work great for small pet projects, but imagine what happens if you need to restart your server from scratch? You would have to redo everything manually which could take a lot of time. It gets even worse if you have a large infrastructure to manage that is comprised of many machines. 
+This process seems to work great for small pet projects, but imagine what happens if you need to restart your server from scratch? You would have to redo everything manually which could take a lot of time. It gets even worse if you have a large infrastructure to manage that is comprised of many machines.
 
 
 ## Ansible - Automate Everything
@@ -28,7 +28,7 @@ The goal of this post is to help you start thinking about automation by showing 
 
 ###### Sample Project
 
-A [sample project](https://github.com/harneksidhu/blog-examples/tree/master/ansible-digital-ocean) with an Ansible infrastructure is provided for your convenience. This should be cloned onto your machine. The project utilizes a virtual machine to encapsulate Ansible as well as any required modules that it needs in order to operate. The virtual machine acts as the control machine from which all Ansible commands will be executed. We could have avoided the virtual machine and just installed Ansible on your host operating system, but I found that having a consistent environment is beneficial especially if you want to be able to work on a variety of different operating systems.
+A [sample project](https://github.com/harneksidhu/blog-examples/tree/master/ansible-digital-ocean) with an Ansible infrastructure is provided for your convenience. This should be cloned onto your machine. The project utilizes a virtual machine to encapsulate Ansible as well as any required modules that it needs in order to operate. The virtual machine acts as the control machine from which all Ansible commands will be executed. We could have avoided the virtual machine and just installed Ansible on your host operating system. However, I found that having a consistent environment is beneficial especially if you want to be able to work on a variety of different operating systems.
 
 ###### VirtualBox/Vagrant
 
@@ -40,7 +40,7 @@ Create an account DigitalOcean if you have not already. If you would like to hav
 
 ###### Create public/private ssh keys
 
-The sample project requires a public/private ssh key pair. You could use `ssh-keygen` or any alternative software you feel comfortable creating key pairs with.
+The sample project requires a public/private ssh key pair. You could use `ssh-keygen` or any alternative software you feel comfortable creating key pairs with. Here is a good [resource](https://help.github.com/articles/generating-an-ssh-key/) that explains how to create the keys on Windows and Mac. 
 
 ## Organizing the Sample Project
 
@@ -53,18 +53,18 @@ Your project directory should now look like this:
 
 {% asset_img project-structure.png %}
 
-After that, all you have to do is run 
+After that, all you have to do is open your favourite terminal client and change the directory to where the sample project is cloned and run: 
 
 ``` sh
 vagrant up
 ```
 
-on your favourite terminal client to spin up the virtual machine. This should take a while as it downloads an ubuntu image and installs all the required modules that Ansible needs in order to operate the demo.
+This should take a while as it downloads an Ubuntu image and installs all the required modules that Ansible needs in order to operate the demo.
 
 
 ## Run the demo
 
-In summary, the sample project is a simple Ansible script that performs the following actions:
+The sample project is a simple Ansible script that performs the following actions:
 
 1. Instructs DigitalOcean to create a droplet
 2. Installs Nginx HTTP server
@@ -79,7 +79,7 @@ cd ansible-digital-ocean/
 ansible-playbook setup.yml
 ```
 
-All we did was we connected to the local virtual machine which has Ansible installed using SSH. We then changed the directory on the machine to where our Ansible script (setup.yml) is stored. We finally used the `ansible-playbook setup.yml` command to fire the script. 
+All we did was connect to the local virtual machine which has Ansible installed using ssh. We then changed the directory on the machine to where our Ansible script (setup.yml) is stored. We finally used the `ansible-playbook setup.yml` command to fire the script. 
 
 You should see an output similar to what is shown below:
 
@@ -140,13 +140,13 @@ The following snippet contains the first play:
 
 There is unfortunately a lot going on here so I will try to summarize it in point form:
 
-- The `- hosts: localhost` line tells Ansible we want to run the tasks of this play on localhost since we are only communicating with DigitalOcean's API at this point.
+- The `hosts: localhost` line tells Ansible we want to run the tasks of this play on localhost since we are only communicating with DigitalOcean's API at this point.
 
-- In the first task `shell: cat keys/id_rsa.pub` we are utilizing the [shell module](http://docs.ansible.com/ansible/shell_module.html) to run a cat command on the local virtual machine. We are redirecting the output of the cat command onto a temporary [registered variable](http://docs.ansible.com/ansible/playbooks_variables.html#registered-variables) called `public_key` In summary, we are storing the public ssh key onto a temporary variable that can be used in the next step.
+- In the first task (line 4) we are utilizing the [shell module](http://docs.ansible.com/ansible/shell_module.html) to run a cat command on the local virtual machine. We are redirecting the output of the cat command onto a temporary [registered variable](http://docs.ansible.com/ansible/playbooks_variables.html#registered-variables) called `public_key` In summary, we are storing the public ssh key onto a temporary variable that can be used in the next step.
 
-- In the `- name: Store public ssh key in digital ocean` and `- name: Create droplet` tasks, we are utilizing the [digital_ocean](http://docs.ansible.com/ansible/digital_ocean_module.html) module to communicate with DigitalOcean's API. The first task instructs DigitalOcean to store our public ssh key. The second task tells it to create a droplet. We catch the `api_token` from the variables file (`group_vars/all.yml`) using the [curly brackets](http://docs.ansible.com/ansible/playbooks_variables.html#hey-wait-a-yaml-gotcha) syntax.
+- In the second third tasks (lines 7 and 16), we are utilizing the [digital_ocean](http://docs.ansible.com/ansible/digital_ocean_module.html) module to communicate with DigitalOcean's API. The first task instructs DigitalOcean to store our public ssh key. The second task tells it to create a droplet. We catch the `api_token` from the variables file (`group_vars/all.yml`) using the [curly brackets](http://docs.ansible.com/ansible/playbooks_variables.html#hey-wait-a-yaml-gotcha) syntax.
 
-- The final task utilizes [add_host](http://docs.ansible.com/ansible/add_host_module.html) module to store the IP address of the droplet as well as the corresponding private key used to ssh into it. We are storing the machine onto a hostname variable called `host0`.
+- The final task (line 28) utilizes the [add_host](http://docs.ansible.com/ansible/add_host_module.html) module to store the IP address of the droplet as well as the corresponding private key used to ssh into it. We are storing the machine onto a hostname variable called `host0`.
 
 
 In the next play, we are going to connect to `host0` and install python2 since it is a [requirement](http://docs.ansible.com/ansible/intro_installation.html#managed-node-requirements) in order to execute commands using Ansible's core modules.
@@ -160,13 +160,13 @@ In the next play, we are going to connect to `host0` and install python2 since i
   - name: Install python2
     raw: apt-get -y install python-minimal
 ```
-In summary we are:
+In summary we:
 
-- Using `host0` instead of `localhost` since our goal is to run tasks on the remote machine. Since we have already registered host0 with the appropriate IP address and ssh key, Ansible should be able to handle the connection automatically.  
+- Used `host0` instead of `localhost` since our goal is to run tasks on the remote machine. Ansible should be able to handle the connection automatically since we have already registered host0 with the appropriate IP address and ssh key.
 
-- Connecting to the machine using `root` since that is the only available user.
+- Connected to the machine using `root` since that is the only user account available on the machine.
 
-- Utilizing [raw](http://docs.ansible.com/ansible/raw_module.html) module to execute the installation of python2. Raw module is used here because all other core modules won't work until python2 is installed.
+- Utilized the [raw](http://docs.ansible.com/ansible/raw_module.html) module to execute the installation of python2. Raw module is used here because the core modules will not work until python2 is installed.
 
 Our last play is simple as we are going to setup/configure our HTTP server.
 
@@ -196,27 +196,33 @@ Our last play is simple as we are going to setup/configure our HTTP server.
     state: restarted
 ```
 
-In summary we are:
+In summary we:
 
-- Connecting to the host machine again using `host0`.
+- Connected to the host machine again using `host0`.
 
-- Intalling Nginx using the [apt](http://docs.ansible.com/ansible/apt_module.html) module.
+- Installed Nginx using the [apt](http://docs.ansible.com/ansible/apt_module.html) module.
 
-- Copying the `nginx.conf` configuration file using the [copy](http://docs.ansible.com/ansible/copy_module.html) module.
+- Copied the `nginx.conf` configuration file using the [copy](http://docs.ansible.com/ansible/copy_module.html) module.
 
-- Creating the `/home/static` file path and copying our index.html file onto the remote server.
+- Created the `/home/static` file path and copying our index.html file onto the remote server.
 
-- Restarting the Nginx webserver using the [service](http://docs.ansible.com/ansible/service_module.html) module.
+- Restarted the Nginx webserver using the [service](http://docs.ansible.com/ansible/service_module.html) module.
 
 ## Closing Thoughts
 
-The most important learning that I want you to take out of this blog post is to have the mindset of **automating everything**. Whether it may be interfacing with a cloud provider to spin up/down virtual machines or installing/configuring applications -you will save a lot of time in the long run if you put that effort up front to focus on automation.
+The most important lesson that I want you to take out of this blog post is to have the mindset of **automating everything**. You will save time in the long run if you can put some effort up front and automate your infrastructure. You might think that the effort may not be worth it for basic deployments like the one used in this post but consider the following scenarios:
 
-Getting used to managing servers with Ansible takes a little bit of effort as there is a learning curve involved with the software. There are a ton of [core modules](http://docs.ansible.com/ansible/modules_by_category.html) available and [many extra modules](https://github.com/ansible/ansible-modules-extras) that are in active development. The possibilities are endless with what you can accomplish with it.
+- You have new requirements which means you need to update the server. You could do this manually but making modifications to an existing system can lead to issues like forgetting to delete something you no longer need. We can use Ansible to execute the `destroy.yml` playbook and delete the machine entirely. Then we can modify/run the `setup.yml` playbook with the updated specifications and bring up a new server.
+
+- You have to move your server to AWS. We can accomplish this by replacing the tasks in `setup.yml` that uses DigitalOcean modules with the corresponding [AWS](http://docs.ansible.com/ansible/list_of_cloud_modules.html#amazon) modules. Everything else basically remains the same making the migration pretty easy.
+
+Getting used to managing servers with Ansible definitely takes some effort since there is a learning curve involved. Once you overcome that hurdle, you should be able to see Ansible as a useful tool that you can use whenever you need to work with a production machine. 
+
+This blog post covers the bare minimum of what Ansible can do. There are a ton of [core modules](http://docs.ansible.com/ansible/modules_by_category.html) available and [many extra modules](https://github.com/ansible/ansible-modules-extras) that are in active development. The possibilities are endless with what you can accomplish with it.
 
 ## Further Reading
 
-If you are interested in learning Ansible at a more in-depth level, here are a list of resources I found to be helpful:
+Learning Ansible at a more in-depth level takes some time but the investment is worth it. Here are some resources that I found that have helped me: 
 
 - https://www.ansible.com/webinars-training
 - http://docs.ansible.com/ansible/index.html
